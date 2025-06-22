@@ -28,8 +28,15 @@ def to_braille(text):
         )
         result = json.loads(response["body"].read())
         braille_text = result["completion"].strip()
+        
+        if not braille_text:
+            logging.warning("Bedrock returned empty response, using original text")
+            return text
+            
         logging.info("Received AI-translated Braille-friendly text.")
         return braille_text
+        
     except Exception as e:
         logging.error(f"Failed to invoke Bedrock: {e}")
-        raise
+        logging.warning("Falling back to original text")
+        return text
