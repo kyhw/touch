@@ -136,6 +136,29 @@ Run with verbose logging to see detailed information:
 python cli.py video.mp4 --verbose
 ```
 
+## Cost Estimation
+
+Running Touch on a 5-minute video incurs costs primarily from AWS services. Here is a rough estimate for a single 5-minute video:
+
+| Service         | Estimated Cost |
+|-----------------|---------------|
+| S3              | <$0.01        |
+| Transcribe      | $0.12         |
+| Bedrock (Claude)| $0.01–$0.02   |
+| **Total**       | **$0.13–$0.15** |
+
+- **S3**: Used for temporary audio storage and transfer. Cost is negligible for small files.
+- **AWS Transcribe**: Main cost driver. Priced at ~$0.024 per minute of audio.
+- **AWS Bedrock (Claude)**: Used for Braille conversion. Priced per 1,000 tokens; cost is low for short transcripts.
+
+**Note:**
+- Costs scale linearly with video length.
+- Using more advanced Claude models may increase Bedrock costs.
+- Local compute and YouTube download are free (except for your own bandwidth/electricity).
+- AWS Free Tier may cover some or all costs for new accounts.
+
+These estimates are based on 2024 AWS pricing and may vary by region or usage.
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
