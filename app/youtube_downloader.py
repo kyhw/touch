@@ -3,7 +3,11 @@ import uuid
 import os
 import glob
 
-def download_youtube_video(url):
+def download_video(url):
+    """
+    Download audio from a YouTube, Vimeo, or Dailymotion video URL using yt_dlp.
+    Returns the path to the downloaded audio file.
+    """
     output_dir = "/tmp"
     base_name = str(uuid.uuid4())
     base_path = os.path.join(output_dir, base_name)

@@ -8,8 +8,8 @@ from app.transcriber import start_transcription, get_transcription_result
 from app.braille_converter import to_braille
 from app.config import validate_config
 
-def run_pipeline(video_path, output_file):
-    """Run the complete video to braille pipeline with enhanced error handling and progress tracking."""
+def run_pipeline(video_path, output_file, braille_mode="unicode"):
+    """Run the complete video/audio to Braille pipeline with enhanced error handling and progress tracking."""
     start_time = time.time()
     
     # Validate configuration first
@@ -38,7 +38,7 @@ def run_pipeline(video_path, output_file):
         logging.info(f"📁 Output will be written to: {output_file}")
         
         # Step 1: Extract audio
-        logging.info("🎵 Step 1/4: Extracting audio from video...")
+        logging.info("🎵 Step 1/4: Extracting audio from video/audio file...")
         extract_audio(video_path, audio_file)
         
         # Step 2: Upload to S3
@@ -57,8 +57,8 @@ def run_pipeline(video_path, output_file):
         logging.info(f"📝 Transcription completed. Text length: {len(transcript)} characters")
         
         # Step 4: Convert to braille
-        logging.info("🔤 Step 4/4: Converting to Braille-optimized text...")
-        braille_text = to_braille(transcript)
+        logging.info("🔤 Step 4/4: Converting to Unicode Braille text via Bedrock...")
+        braille_text = to_braille(transcript, mode=braille_mode)
         
         if not braille_text or not braille_text.strip():
             logging.warning("Braille conversion returned empty text, using original transcript")

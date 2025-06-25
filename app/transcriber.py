@@ -7,9 +7,11 @@ from app.config import REGION
 transcribe = boto3.client("transcribe", region_name=REGION)
 
 def start_transcription(job_name, s3_uri):
-    """Start AWS Transcribe job with enhanced error handling."""
+    """
+    Start an AWS Transcribe job for the given S3 URI.
+    Uses minimal settings for single-speaker, single-alternative transcription.
+    """
     logging.info(f"Starting transcription job: {job_name}")
-    
     try:
         response = transcribe.start_transcription_job(
             TranscriptionJobName=job_name,
@@ -18,20 +20,15 @@ def start_transcription(job_name, s3_uri):
             LanguageCode="en-US",
             Settings={
                 "ShowSpeakerLabels": False,
-                "MaxSpeakerLabels": 1,
-                "ShowAlternatives": False,
-                "MaxAlternatives": 1
+                "ShowAlternatives": False
             }
         )
-        
         job_status = response['TranscriptionJob']['TranscriptionJobStatus']
         if job_status == 'FAILED':
             failure_reason = response['TranscriptionJob'].get('FailureReason', 'Unknown error')
             raise RuntimeError(f"Transcription job failed immediately: {failure_reason}")
-        
         logging.info(f"✅ Transcription job started successfully: {job_name}")
         return response
-        
     except Exception as e:
         logging.error(f"❌ Failed to start transcription job: {e}")
         raise

@@ -3,9 +3,10 @@ import logging
 import os
 import tempfile
 import shutil
+from pydub import AudioSegment
 
 def extract_audio(video_path, audio_path):
-    """Extract audio from video file with enhanced error handling and performance optimizations."""
+    """Extract audio from video or MP3 file with enhanced error handling and performance optimizations."""
     logging.info(f"Extracting audio from {video_path}...")
     
     if not os.path.exists(video_path):
@@ -19,13 +20,31 @@ def extract_audio(video_path, audio_path):
     max_size = 500 * 1024 * 1024  # 500MB limit
     if file_size > max_size:
         logging.warning(f"Large video file detected ({file_size / 1024 / 1024:.1f}MB). Processing may take longer.")
+
+    # MP3 support
+    if video_path.lower().endswith('.mp3'):
+        try:
+            logging.info("Detected MP3 file. Converting to WAV format for processing...")
+            audio = AudioSegment.from_mp3(video_path)
+            # Export as 16kHz, mono, 16-bit PCM WAV
+            audio = audio.set_frame_rate(16000).set_channels(1).set_sample_width(2)
+            audio.export(audio_path, format="wav")
+            audio_size = os.path.getsize(audio_path)
+            if audio_size == 0:
+                raise RuntimeError("Extracted audio file is empty")
+            logging.info(f"✅ Audio extracted successfully to {audio_path}")
+            logging.info(f"📊 Audio file size: {audio_size / 1024:.1f}KB")
+            return audio_path
+        except Exception as e:
+            logging.error(f"❌ MP3 audio extraction failed: {e}")
+            raise
     
     clip = None
     temp_audio = None
     
     try:
         # Load video with optimized settings
-        clip = VideoFileClip(video_path, verbose=False, logger=None)
+        clip = VideoFileClip(video_path, verbose=False)
         
         if clip.audio is None:
             raise ValueError("Video file has no audio track")
@@ -48,7 +67,6 @@ def extract_audio(video_path, audio_path):
         clip.audio.write_audiofile(
             temp_audio_path,
             verbose=False,
-            logger=None,
             fps=16000,  # Standard sample rate for speech
             nbytes=2,   # 16-bit audio
             codec='pcm_s16le'  # Standard PCM codec
