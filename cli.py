@@ -66,6 +66,65 @@ def check_environment():
     logging.info(f"✅ S3 access: {s3_message}")
     return True
 
+def test_aws_services():
+    """Test AWS services connectivity and permissions."""
+    logging.info("🧪 Testing AWS services connectivity...")
+    
+    try:
+        import boto3
+        from app.config import REGION, BUCKET
+        
+        # Test S3
+        logging.info("📦 Testing S3 access...")
+        s3_accessible, s3_message = check_s3_bucket_access()
+        if s3_accessible:
+            logging.info(f"✅ S3: {s3_message}")
+        else:
+            logging.error(f"❌ S3: {s3_message}")
+            return False
+        
+        # Test Transcribe
+        logging.info("🎤 Testing Transcribe access...")
+        transcribe = boto3.client("transcribe", region_name=REGION)
+        try:
+            transcribe.list_transcription_jobs(MaxResults=1)
+            logging.info("✅ Transcribe: Service accessible")
+        except Exception as e:
+            logging.error(f"❌ Transcribe: {e}")
+            return False
+        
+        # Test Bedrock
+        logging.info("🤖 Testing Bedrock access...")
+        bedrock = boto3.client("bedrock-runtime", region_name=REGION)
+        try:
+            # Test with a minimal request
+            import json
+            test_prompt = "Hello"
+            response = bedrock.invoke_model(
+                modelId="anthropic.claude-3-sonnet-20240229-v1:0",
+                contentType="application/json",
+                accept="application/json",
+                body=json.dumps({
+                    "prompt": f"\n\nHuman: {test_prompt}\n\nAssistant:",
+                    "max_tokens_to_sample": 10,
+                    "temperature": 0.1
+                })
+            )
+            logging.info("✅ Bedrock: Service accessible")
+        except Exception as e:
+            logging.error(f"❌ Bedrock: {e}")
+            return False
+        
+        logging.info("🎉 All AWS services are accessible!")
+        return True
+        
+    except ImportError:
+        logging.error("❌ boto3 not installed. Run: pip install boto3")
+        return False
+    except Exception as e:
+        logging.error(f"❌ AWS test failed: {e}")
+        return False
+
 def main():
     parser = argparse.ArgumentParser(
         description="Touch: Convert spoken video and MP3 content to literal Unicode Braille or Braille-optimized text",
@@ -83,11 +142,12 @@ Note: Always wrap video URLs in single or double quotes to avoid shell issues.
       By default, output is literal Unicode Braille (U+2800–U+28FF). Use --braille-mode optimized for plain text.
         """
     )
-    parser.add_argument("input", help="Path to video file, MP3 file, or YouTube/Vimeo/Dailymotion URL (wrap URLs in quotes)")
+    parser.add_argument("input", nargs='?', help="Path to video file, MP3 file, or YouTube/Vimeo/Dailymotion URL (wrap URLs in quotes)")
     parser.add_argument("--output", default="output.brf", help="Path to output file (default: output.brf, always placed in output/ directory unless a directory is specified)")
     parser.add_argument("--braille-mode", choices=["unicode", "optimized"], default="unicode", help="Braille output mode: 'unicode' for literal Unicode Braille (default), 'optimized' for Braille-optimized plain text")
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
     parser.add_argument("--check-env", action="store_true", help="Check environment configuration and exit")
+    parser.add_argument("--test-aws", action="store_true", help="Test AWS services connectivity and permissions")
     
     args = parser.parse_args()
     
@@ -98,6 +158,15 @@ Note: Always wrap video URLs in single or double quotes to avoid shell issues.
         logging.info("🎯 Touch: Video to Braille Converter")
         logging.info("=" * 50)
         
+        # AWS test
+        if args.test_aws:
+            if test_aws_services():
+                logging.info("✅ AWS test passed!")
+                return 0
+            else:
+                logging.error("❌ AWS test failed!")
+                return 1
+        
         # Environment check
         if args.check_env:
             if check_environment():
@@ -106,6 +175,11 @@ Note: Always wrap video URLs in single or double quotes to avoid shell issues.
             else:
                 logging.error("❌ Environment check failed!")
                 return 1
+        
+        # Check if input is provided
+        if not args.input:
+            parser.print_help()
+            return 1
         
         # Validate input
         logging.info("🔍 Validating input...")

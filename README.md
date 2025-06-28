@@ -47,6 +47,58 @@ Convert spoken content from video files, MP3 audio, or online platforms (YouTube
 
 ---
 
+## AWS Setup
+
+### Option 1: Automated Setup (Recommended)
+
+Use the provided script to automatically create an IAM user with the necessary permissions:
+
+1. **Configure your AWS credentials** (if not already done):
+   ```bash
+   aws configure
+   ```
+
+2. **Run the automated setup script:**
+   ```bash
+   python setup_aws_iam.py --bucket-name my-touch-bucket --output-env
+   ```
+
+   This script will:
+   - Create an IAM user (`touch-app-user` by default)
+   - Create an S3 bucket for audio files
+   - Attach the required AWS managed policies:
+     - `AmazonS3FullAccess`
+     - `AmazonTranscribeFullAccess` 
+     - `AmazonBedrockFullAccess`
+   - Generate access keys
+   - Output the `.env` file content
+
+3. **Create the `.env` file** with the output from the script
+
+4. **Test the setup:**
+   ```bash
+   python cli.py --test-aws
+   ```
+
+**Advanced options:**
+- Use custom policy (more secure): `--use-custom-policy`
+- Specify different username: `--username my-user`
+- Specify different region: `--region us-west-2`
+
+### Option 2: Manual Setup
+
+If you prefer to set up AWS manually:
+
+1. **Create an IAM user** in the AWS Console
+2. **Attach these managed policies:**
+   - `AmazonS3FullAccess`
+   - `AmazonTranscribeFullAccess`
+   - `AmazonBedrockFullAccess`
+3. **Create access keys** for the user
+4. **Create an S3 bucket** for audio files
+
+---
+
 ## Configuration
 Create a `.env` file in the project root:
 ```bash
@@ -76,6 +128,16 @@ TOUCH_S3_BUCKET=your-s3-bucket-name
   ```
 
 **Note:** Always wrap video URLs in single or double quotes to avoid shell issues. MP3 files are processed directly and do not require extraction from video.
+
+### Testing and Validation
+- **Test AWS connectivity:**
+  ```bash
+  python cli.py --test-aws
+  ```
+- **Check environment configuration:**
+  ```bash
+  python cli.py --check-env
+  ```
 
 ### Output Modes
 - By default, output is **literal Unicode Braille** (U+2800–U+28FF).
@@ -152,6 +214,9 @@ Video/Audio Input → Audio Extraction → S3 Upload → AWS Transcribe → AWS 
   - Verify AWS Transcribe service is available in your region
 - **"audioop not found" or MP3 extraction errors**
   - Ensure you are using Python 3.12 or lower (Python 3.13+ is not supported)
+- **AWS permission errors**
+  - Run `python cli.py --test-aws` to diagnose specific service issues
+  - Verify your IAM user has the required policies attached
 
 ---
 
